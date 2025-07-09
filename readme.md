@@ -79,6 +79,6 @@ The application will now be running at `http://localhost:3000`. Open this URL in
 
 Here's the flowchart that visualizes the data flow from the Solana blockchain to the end-user:
 
-_(Here's where you can add the flowchart image)_
+
 
 ![TokenWise Architecture Flowchart](https://github.com/user-attachments/assets/105a5fe3-98d3-4f15-895c-420706c99621)
