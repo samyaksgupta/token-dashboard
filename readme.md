@@ -53,7 +53,7 @@ npm install
 The application requires a `.env` file for configuration.
 
 -   Create a new file named `.env` in the root of the project.
--   Copy the following content into it and replace the placeholder values with your own.
+-   Copy the following content into it and replace the placeholder values with your own APIs.
 
 ```env
 # Your Helius RPC URL with API Key
