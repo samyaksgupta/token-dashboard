@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TokenWise Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/dayjs@1/dayjs.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/dayjs@1/plugin/relativeTime.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #111827; /* bg-gray-900 */
+        }
+        .card {
+            background-color: #1f2937; /* bg-gray-800 */
+            border: 1px solid #374151; /* border-gray-700 */
+            border-radius: 0.75rem; /* rounded-xl */
+            padding: 1.5rem; /* p-6 */
+        }
+        .table-scrollbar::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        .table-scrollbar::-webkit-scrollbar-track {
+            background: #1f2937; /* bg-gray-800 */
+        }
+        .table-scrollbar::-webkit-scrollbar-thumb {
+            background: #4b5563; /* bg-gray-600 */
+            border-radius: 3px;
+        }
+        .table-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #6b7280; /* bg-gray-500 */
+        }
+        .pulse-green {
+            animation: pulse-green 2s infinite;
+        }
+        @keyframes pulse-green {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+    </style>
+</head>
+<body class="text-gray-200">
+    <div class="container mx-auto p-4 md:p-6">
+        <!-- Header -->
+        <header class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
+            <div>
+                <h1 class="text-3xl font-bold text-white">TokenWise Dashboard</h1>
+                <p class="text-gray-400 mt-1">Real-Time Wallet Intelligence for <span class="font-mono text-sm bg-gray-700 text-cyan-400 px-2 py-1 rounded">9BB6...pump</span></p>
+            </div>
+            <div class="flex items-center space-x-4 mt-4 md:mt-0">
+                <span id="connection-status" class="flex items-center text-sm text-gray-400">
+                    <span class="h-2 w-2 bg-yellow-400 rounded-full mr-2"></span>Connecting...
+                </span>
+                <div class="text-right">
+                    <p id="current-time" class="text-sm font-medium text-white"></p>
+                    <p id="current-date" class="text-xs text-gray-400"></p>
+                </div>
+            </div>
+        </header>
+
+        <!-- Stats Cards -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+            <div class="card">
+                <h3 class="text-sm font-medium text-gray-400">Total Buys</h3>
+                <p id="total-buys" class="text-3xl font-semibold text-green-400 mt-1">0</p>
+            </div>
+            <div class="card">
+                <h3 class="text-sm font-medium text-gray-400">Total Sells</h3>
+                <p id="total-sells" class="text-3xl font-semibold text-red-400 mt-1">0</p>
+            </div>
+            <div class="card">
+                <h3 class="text-sm font-medium text-gray-400">Net Direction</h3>
+                <p id="net-direction" class="text-3xl font-semibold text-gray-300 mt-1">-</p>
+            </div>
+            <div class="card">
+                <h3 class="text-sm font-medium text-gray-400">Live Transactions</h3>
+                <p id="tx-count" class="text-3xl font-semibold text-gray-300 mt-1">0</p>
+            </div>
+        </div>
+        
+        <!-- Main Content Area -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- Left Column: Transactions & Protocol Chart -->
+            <div class="lg:col-span-2 flex flex-col gap-6">
+                <!-- Live Transactions -->
+                <div class="card flex-grow flex flex-col">
+                    <h2 class="text-lg font-semibold text-white mb-4">Live Transactions</h2>
+                    <div class="overflow-auto table-scrollbar flex-grow" style="max-height: 400px;">
+                        <table class="w-full text-sm text-left">
+                            <thead class="text-xs text-gray-400 uppercase bg-gray-700/50 sticky top-0">
+                                <tr>
+                                    <th scope="col" class="px-4 py-3">Time</th>
+                                    <th scope="col" class="px-4 py-3">Type</th>
+                                    <th scope="col" class="px-4 py-3">Amount</th>
+                                    <th scope="col" class="px-4 py-3">Wallet</th>
+                                    <th scope="col" class="px-4 py-3">Protocol</th>
+                                    <th scope="col" class="px-4 py-3">Tx</th>
+                                </tr>
+                            </thead>
+                            <tbody id="transactions-table-body">
+                                <!-- Rows will be inserted here by JS -->
+                                <tr id="placeholder-row"><td colspan="6" class="text-center py-8 text-gray-500">Awaiting transactions...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                 <!-- Protocol Usage -->
+                <div class="card">
+                    <h2 class="text-lg font-semibold text-white mb-4">Protocol Usage</h2>
+                    <div class="h-64 flex items-center justify-center">
+                        <canvas id="protocol-chart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Column: Top Holders -->
+            <div class="card lg:col-span-1">
+                <h2 class="text-lg font-semibold text-white mb-4">Top 60 Holders</h2>
+                <div class="overflow-y-auto table-scrollbar" style="max-height: 700px;">
+                    <table class="w-full text-sm text-left">
+                        <thead class="text-xs text-gray-400 uppercase bg-gray-700/50 sticky top-0">
+                            <tr>
+                                <th scope="col" class="px-4 py-3">#</th>
+                                <th scope="col" class="px-4 py-3">Wallet Address</th>
+                                <th scope="col" class="px-4 py-3 text-right">Amount</th>
+                            </tr>
+                        </thead>
+                        <tbody id="holders-table-body">
+                            <!-- Rows will be inserted here by JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        dayjs.extend(dayjs_plugin_relativeTime);
+
+        // --- DOM Elements ---
+        const connectionStatusEl = document.getElementById('connection-status');
+        const totalBuysEl = document.getElementById('total-buys');
+        const totalSellsEl = document.getElementById('total-sells');
+        const netDirectionEl = document.getElementById('net-direction');
+        const txCountEl = document.getElementById('tx-count');
+        const transactionsTableBody = document.getElementById('transactions-table-body');
+        const holdersTableBody = document.getElementById('holders-table-body');
+        const placeholderRow = document.getElementById('placeholder-row');
+        const currentTimeEl = document.getElementById('current-time');
+        const currentDateEl = document.getElementById('current-date');
+
+        // --- State ---
+        let transactions = [];
+        let holders = [];
+        let protocolCounts = { Jupiter: 0, Raydium: 0, Orca: 0, Unknown: 0 };
+        let protocolChart;
+
+        // --- Utility Functions ---
+        const formatNumber = (num) => num.toLocaleString('en-US', { maximumFractionDigits: 2 });
+        const formatAddress = (addr) => `${addr.slice(0, 4)}...${addr.slice(-4)}`;
+
+        function updateClock() {
+            const now = new Date();
+            currentTimeEl.textContent = now.toLocaleTimeString();
+            currentDateEl.textContent = now.toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+        }
+        setInterval(updateClock, 1000);
+        updateClock();
+
+        // --- Charting ---
+        function initializeChart() {
+            const ctx = document.getElementById('protocol-chart').getContext('2d');
+            protocolChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: Object.keys(protocolCounts),
+                    datasets: [{
+                        data: Object.values(protocolCounts),
+                        backgroundColor: ['#f59e0b', '#ef4444', '#3b82f6', '#6b7280'],
+                        borderColor: '#1f2937',
+                        borderWidth: 4,
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'right',
+                            labels: {
+                                color: '#d1d5db', // text-gray-300
+                                boxWidth: 12,
+                                padding: 20,
+                                font: {
+                                    size: 14,
+                                    family: 'Inter'
+                                }
+                            }
+                        },
+                        tooltip: {
+                            backgroundColor: '#374151',
+                            titleColor: '#ffffff',
+                            bodyColor: '#d1d5db',
+                            bodyFont: {
+                                size: 14,
+                            },
+                            titleFont: {
+                                size: 16
+                            },
+                            padding: 12,
+                            cornerRadius: 8,
+                        }
+                    },
+                    cutout: '60%',
+                }
+            });
+        }
+
+        function updateChart() {
+            if (protocolChart) {
+                protocolChart.data.datasets[0].data = Object.values(protocolCounts);
+                protocolChart.update();
+            }
+        }
+        
+        // --- Data Rendering ---
+        function renderHolders(holdersData) {
+            holders = holdersData.sort((a,b) => b.uiAmount - a.uiAmount);
+            holdersTableBody.innerHTML = '';
+            holders.forEach((holder, index) => {
+                const row = document.createElement('tr');
+                row.className = 'border-b border-gray-700 hover:bg-gray-700/50';
+                row.innerHTML = `
+                    <td class="px-4 py-3 text-gray-400">${index + 1}</td>
+                    <td class="px-4 py-3 font-mono text-cyan-400 text-xs">${holder.address}</td>
+                    <td class="px-4 py-3 text-right font-medium text-white">${formatNumber(holder.uiAmount)}</td>
+                `;
+                holdersTableBody.appendChild(row);
+            });
+        }
+
+        function addTransaction(tx) {
+            if (placeholderRow) {
+                placeholderRow.remove();
+            }
+            transactions.unshift(tx);
+            if (transactions.length > 100) { // Keep last 100 txs
+                transactions.pop();
+            }
+            
+            const row = document.createElement('tr');
+            row.className = 'border-b border-gray-700';
+            const isBuy = tx.type === 'buy';
+            row.innerHTML = `
+                <td class="px-4 py-3 text-gray-400">${dayjs(tx.timestamp).fromNow(true)} ago</td>
+                <td class="px-4 py-3 font-semibold ${isBuy ? 'text-green-400' : 'text-red-400'}">${isBuy ? 'BUY' : 'SELL'}</td>
+                <td class="px-4 py-3 font-medium text-white">${formatNumber(tx.amount)}</td>
+                <td class="px-4 py-3 font-mono text-cyan-400 text-xs">${formatAddress(tx.walletAddress)}</td>
+                <td class="px-4 py-3 text-gray-300">${tx.protocol}</td>
+                <td class="px-4 py-3">
+                    <a href="https://solscan.io/tx/${tx.signature}" target="_blank" class="text-blue-400 hover:underline">View</a>
+                </td>
+            `;
+            transactionsTableBody.prepend(row);
+            updateStats();
+        }
+
+        function updateStats() {
+            const buys = transactions.filter(t => t.type === 'buy');
+            const sells = transactions.filter(t => t.type === 'sell');
+            
+            const buyVolume = buys.reduce((sum, tx) => sum + tx.amount, 0);
+            const sellVolume = sells.reduce((sum, tx) => sum + tx.amount, 0);
+
+            totalBuysEl.textContent = formatNumber(buyVolume);
+            totalSellsEl.textContent = formatNumber(sellVolume);
+            txCountEl.textContent = transactions.length;
+
+            if (buyVolume > sellVolume) {
+                netDirectionEl.textContent = 'Buy Heavy';
+                netDirectionEl.className = 'text-3xl font-semibold mt-1 text-green-400';
+            } else if (sellVolume > buyVolume) {
+                netDirectionEl.textContent = 'Sell Heavy';
+                netDirectionEl.className = 'text-3xl font-semibold mt-1 text-red-400';
+            } else {
+                netDirectionEl.textContent = 'Neutral';
+                netDirectionEl.className = 'text-3xl font-semibold mt-1 text-gray-300';
+            }
+
+            // Update protocol counts
+            protocolCounts = { Jupiter: 0, Raydium: 0, Orca: 0, Unknown: 0 };
+            transactions.forEach(tx => {
+                if (protocolCounts.hasOwnProperty(tx.protocol)) {
+                    protocolCounts[tx.protocol]++;
+                }
+            });
+            updateChart();
+        }
+
+        // --- WebSocket Logic ---
+        function connectWebSocket() {
+            const ws = new WebSocket(`ws://${window.location.host}`);
+
+            ws.onopen = () => {
+                console.log('WebSocket connected');
+                connectionStatusEl.innerHTML = '<span class="h-2 w-2 bg-green-500 rounded-full mr-2 pulse-green"></span>Connected';
+            };
+
+            ws.onmessage = (event) => {
+                const message = JSON.parse(event.data);
+                if (message.type === 'initial_data') {
+                    console.log('Received initial data');
+                    transactions = message.payload.transactions;
+                    renderHolders(message.payload.holders);
+                    transactionsTableBody.innerHTML = ''; // Clear placeholder
+                    transactions.forEach(tx => addTransaction(tx)); // Re-render existing txs
+                    updateStats();
+                } else if (message.type === 'new_transaction') {
+                    addTransaction(message.payload);
+                }
+            };
+
+            ws.onclose = () => {
+                console.log('WebSocket disconnected. Reconnecting...');
+                connectionStatusEl.innerHTML = '<span class="h-2 w-2 bg-red-500 rounded-full mr-2"></span>Disconnected';
+                setTimeout(connectWebSocket, 3000); // Attempt to reconnect every 3 seconds
+            };
+
+            ws.onerror = (error) => {
+                console.error('WebSocket error:', error);
+                ws.close();
+            };
+        }
+
+        // --- Initialization ---
+        document.addEventListener('DOMContentLoaded', () => {
+            initializeChart();
+            connectWebSocket();
+        });
+    </script>
+</body>
+</html>
